@@ -60,7 +60,7 @@ const HeroSlide = () => {
 }
 
 const HeroSlideItem = (props) => {
-  let hisrory = useHistory()
+  let history = useHistory()
 
   const item = props.item
 
@@ -95,7 +95,7 @@ const HeroSlideItem = (props) => {
           <h2 className="title">{item.title}</h2>
           <div className="overview">{item.overview}</div>
           <div className="btns">
-            <Button onClick={() => hisrory.push("/movie/" + item.id)}>
+            <Button onClick={() => history.push("/movie/" + item.id)}>
               Watch now
             </Button>
             <OutlineButton onClick={setModalActive}>
