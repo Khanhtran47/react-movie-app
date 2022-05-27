@@ -1,45 +1,39 @@
 import { useState, useEffect, useCallback } from "react"
-import { useParams, useHistory } from "react-router"
-
-import "./movie-grid.scss"
+import { useRouter } from "next/router"
 
 import MovieCard from "../movie-card/MovieCard"
 import Input from "../input/Input"
-import Button from "../button/Button"
-import { OutlineButton } from "../button/Button"
 
-import tmdbApi, { category, movieType, tvType } from "../../api/tmdbApi"
+import { category, movieType } from "../../api/tmdbApi"
 
 const MovieGrid = (props) => {
+  const router = useRouter()
   const [items, setItems] = useState([])
 
   const [page, setPage] = useState(1)
   const [totalPage, setTotalPage] = useState(0)
 
-  const { keyword } = useParams()
+  const { keyword } = router.query
 
   useEffect(() => {
     const getList = async () => {
       let response = null
       if (keyword === undefined) {
-        const params = {}
         switch (props.category) {
           case category.movie:
-            response = await tmdbApi.getMoviesList(movieType.upcoming, {
-              params,
-            })
+            response = await fetch(
+              `/api/items?category=${category.movie}&type=${movieType.upcoming}`
+            )
             break
           default:
-            response = await tmdbApi.getTvList(tvType.popular, { params })
+            response = await fetch(`/api/items?category=${category.tv}&type=${movieType.popular}`)
         }
       } else {
-        const params = {
-          query: keyword,
-        }
-        response = await tmdbApi.search(props.category, { params })
+        response = await fetch(`/api/search?category=${props.category}&query=${keyword}`)
       }
-      setItems(response.results)
-      setTotalPage(response.total_pages)
+      const data = await response.json()
+      setItems(data.data)
+      setTotalPage(data.total_pages)
     }
     getList()
   }, [props.category, keyword])
@@ -47,24 +41,24 @@ const MovieGrid = (props) => {
   const loadMore = async () => {
     let response = null
     if (keyword === undefined) {
-      const params = {
-        page: page + 1,
-      }
       switch (props.category) {
         case category.movie:
-          response = await tmdbApi.getMoviesList(movieType.upcoming, { params })
+          response = await fetch(
+            `/api/items?category=${category.movie}&type=${movieType.upcoming}&page=${page + 1}`
+          )
           break
         default:
-          response = await tmdbApi.getTvList(tvType.popular, { params })
+          response = await fetch(
+            `/api/items?category=${category.tv}&type=${movieType.popular}&page=${page}`
+          )
       }
     } else {
-      const params = {
-        page: page + 1,
-        query: keyword,
-      }
-      response = await tmdbApi.search(props.category, { params })
+      response = await fetch(
+        `/api/search?category=${props.category}&query=${keyword}&page=${page + 1}`
+      )
     }
-    setItems([...items, ...response.results])
+    const data = await response.json()
+    setItems([...items, ...data.data])
     setPage(page + 1)
   }
 
@@ -80,9 +74,9 @@ const MovieGrid = (props) => {
       </div>
       {page < totalPage ? (
         <div className="movie-grid__loadmore">
-          <OutlineButton className="small" onClick={loadMore}>
+          <button className="btn btn-outline small" onClick={loadMore}>
             Load more
-          </OutlineButton>
+          </button>
         </div>
       ) : null}
     </>
@@ -90,15 +84,15 @@ const MovieGrid = (props) => {
 }
 
 const MovieSearch = (props) => {
-  const history = useHistory()
+  const router = useRouter()
 
   const [keyword, setKeyword] = useState(props.keyword ? props.keyword : "")
 
   const goToSearch = useCallback(() => {
     if (keyword.trim().length > 0) {
-      history.push(`/${category[props.category]}/search/${keyword}`)
+      router.push(`/${category[props.category]}/search/${keyword}`)
     }
-  }, [keyword, props.category, history])
+  }, [keyword, props.category, router])
 
   useEffect(() => {
     const enterEvent = (e) => {
@@ -121,9 +115,9 @@ const MovieSearch = (props) => {
         value={keyword}
         onChange={(e) => setKeyword(e.target.value)}
       />
-      <Button className="small" onClick={goToSearch}>
+      <button className="btn small" onClick={goToSearch}>
         Search
-      </Button>
+      </button>
     </div>
   )
 }
